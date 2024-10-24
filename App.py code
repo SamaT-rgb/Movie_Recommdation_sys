@@ -1,0 +1,49 @@
+import pickle
+import streamlit as st
+import pandas as pd
+
+# Function to recommend movies
+def recommend(movie):
+    try:
+        movie_index = movies[movies['title'] == movie].index[0]
+        distances = similarity[movie_index]
+
+        # Sort by similarity score and exclude the selected movie itself
+        movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
+
+        recommended_movie_names = []
+        for i in movies_list:
+            recommended_movie_names.append(movies.iloc[i[0]].title)
+
+        return recommended_movie_names
+    except IndexError:
+        return ["Movie not found. Please try another movie."]
+
+# Load movie data and similarity matrix
+try:
+    movies_dict = pickle.load(open('movie_dict.pkl', 'rb'))  # Load movie data
+    movies = pd.DataFrame(movies_dict)
+    similarity = pickle.load(open('similarity.pkl', 'rb'))  # Load similarity matrix
+except FileNotFoundError as e:
+    st.error(f"Error loading data: {e}")
+    st.stop()
+
+# Streamlit App title
+st.title('Movie Recommender System')
+
+# Movie selection dropdown
+selected_movie_name = st.selectbox(
+    "Select a movie to get recommendations:",
+    movies['title'].values)
+
+# Recommend button
+if st.button('Show Recommendation'):
+    recommended_movie_names = recommend(selected_movie_name)
+
+    if recommended_movie_names:
+        st.subheader(f"Movies recommended for '{selected_movie_name}':")
+
+        for name in recommended_movie_names:
+            st.text(name)
+    else:
+        st.write("No recommendations available.")
